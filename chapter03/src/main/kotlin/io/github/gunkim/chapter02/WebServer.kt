@@ -14,8 +14,8 @@ fun main(args: Array<String>) {
         args[0].toInt()
     }
 
-    while (true) {
-        ServerSocket(port).use {
+    ServerSocket(port).use {
+        while (true) {
             logger.info("Web Application Server Started $port port.")
 
             val requestHandler = RequestHandler(it.accept())

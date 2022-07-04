@@ -10,12 +10,10 @@ class RequestHandler(
     override fun run() {
         log.info("New Client Connect! Connected IP : ${connection.inetAddress}, Port : ${connection.port}")
 
-        connection.use {
-            DataOutputStream(it.getOutputStream()).use { dos ->
-                val body = "Hello World".toByteArray()
-                response200Header(dos, body.size)
-                responseBody(dos, body)
-            }
+        DataOutputStream(connection.getOutputStream()).use { dos ->
+            val body = "Hello World".toByteArray()
+            response200Header(dos, body.size)
+            responseBody(dos, body)
         }
     }
 
