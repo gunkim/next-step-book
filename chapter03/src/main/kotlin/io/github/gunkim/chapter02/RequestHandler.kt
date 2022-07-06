@@ -32,17 +32,17 @@ class RequestHandler(
         }
     }
 
-    private fun response200Header(dos: DataOutputStream, lengthOfBodyContent: Int) {
-        dos.writeBytes("HTTP/1.1 200 OK \r\n")
-        dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n")
-        dos.writeBytes("Content-Length: ${lengthOfBodyContent}\r\n")
-        dos.writeBytes("\r\n")
+    private fun response200Header(dos: DataOutputStream, lengthOfBodyContent: Int) = dos.run {
+        writeBytes("HTTP/1.1 200 OK \r\n")
+        writeBytes("Content-Type: text/html;charset=utf-8\r\n")
+        writeBytes("Content-Length: ${lengthOfBodyContent}\r\n")
+        writeBytes("\r\n")
     }
 
-    private fun responseBody(dos: DataOutputStream, body: ByteArray) {
-        dos.write(body, 0, body.size)
-        dos.writeBytes("\r\n")
-        dos.flush()
+    private fun responseBody(dos: DataOutputStream, body: ByteArray) = dos.run {
+        write(body, 0, body.size)
+        writeBytes("\r\n")
+        flush()
     }
 
     companion object {
