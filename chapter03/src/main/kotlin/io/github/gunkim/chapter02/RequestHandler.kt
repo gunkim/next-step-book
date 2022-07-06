@@ -3,6 +3,7 @@ package io.github.gunkim.chapter02
 import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.InputStreamReader
+import java.net.InetAddress
 import java.net.Socket
 import java.util.logging.Logger
 
@@ -10,26 +11,28 @@ class RequestHandler(
     private val connection: Socket,
 ) : Thread() {
     override fun run() {
-        log.info("New Client Connect! Connected IP : ${connection.inetAddress}, Port : ${connection.port}")
+        val (inetAddress, port) = connection
+        log.info("New Client Connect! Connected IP : ${inetAddress}, Port : ${port}")
 
         connection.getInputStream()
             .let(::InputStreamReader)
             .let(::BufferedReader)
-            .apply {
-                var msg = "request line : ${readLine()}\n"
-                var line: String = readLine() ?: return
-                while (line.isNotEmpty()) {
-                    msg += "header : ${line}\n"
-                    line = readLine() ?: return
-                }
-                log.info(msg)
-            }
+            .apply { print("request line : ${readLine()}") }
+            .run(::generateHeader)
+            .apply(::print)
 
         DataOutputStream(connection.getOutputStream()).use { dos ->
             val body = "Hello World".toByteArray()
             response200Header(dos, body.size)
             responseBody(dos, body)
         }
+    }
+
+    private fun print(msg: String) = log.info(msg)
+    private fun generateHeader(br: BufferedReader): String {
+        val line = br.readLine()
+            .takeUnless(String::isBlank) ?: return ""
+        return "header : ${line}\n${generateHeader(br)}"
     }
 
     private fun response200Header(dos: DataOutputStream, lengthOfBodyContent: Int) = dos.run {
@@ -49,3 +52,7 @@ class RequestHandler(
         private val log = Logger.getLogger(RequestHandler::class.java.name)
     }
 }
+
+private operator fun Socket.component2(): Int = this.port
+
+private operator fun Socket.component1(): InetAddress = this.inetAddress
