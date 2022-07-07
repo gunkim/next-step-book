@@ -1,9 +1,6 @@
 package io.github.gunkim.chapter02
 
-import java.io.BufferedReader
-import java.io.DataOutputStream
-import java.io.InputStreamReader
-import java.net.InetAddress
+import java.io.*
 import java.net.Socket
 import java.util.logging.Logger
 
@@ -11,24 +8,23 @@ class RequestHandler(
     private val connection: Socket,
 ) : Thread() {
     override fun run() {
-        val (inetAddress, port) = connection
-        log.info("New Client Connect! Connected IP : ${inetAddress}, Port : ${port}")
+        val (inputStream, outputStream) = connection
+        connection.connected(log)
 
-        connection.getInputStream()
-            .let(::InputStreamReader)
-            .let(::BufferedReader)
-            .apply { print("request line : ${readLine()}") }
-            .run(::generateHeader)
-            .apply(::print)
+        val br = BufferedReader(InputStreamReader(inputStream))
 
-        DataOutputStream(connection.getOutputStream()).use { dos ->
-            val body = "Hello World".toByteArray()
-            response200Header(dos, body.size)
-            responseBody(dos, body)
-        }
+        log.info("request line : ${readLine()}")
+        generateHeader(br).also(log::info)
+
+        DataOutputStream(outputStream).use(::responseOk)
     }
 
-    private fun print(msg: String) = log.info(msg)
+    private fun responseOk(dos: DataOutputStream) = with(dos) {
+        val body = "Hello World".toByteArray()
+        response200Header(this, body.size)
+        responseBody(this, body)
+    }
+
     private fun generateHeader(br: BufferedReader): String {
         val line = br.readLine()
             .takeUnless(String::isBlank) ?: return ""
@@ -49,10 +45,11 @@ class RequestHandler(
     }
 
     companion object {
-        private val log = Logger.getLogger(RequestHandler::class.java.name)
+        private val log: Logger = Logger.getLogger(RequestHandler::class.java.name)
     }
 }
 
-private operator fun Socket.component2(): Int = this.port
+private operator fun Socket.component1(): InputStream = this.getInputStream()
+private operator fun Socket.component2(): OutputStream = this.getOutputStream()
 
-private operator fun Socket.component1(): InetAddress = this.inetAddress
+private fun Socket.connected(log: Logger) = log.info("New Client Connect! Connected IP : ${inetAddress}, Port : ${port}")
