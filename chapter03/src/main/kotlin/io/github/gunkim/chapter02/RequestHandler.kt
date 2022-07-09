@@ -8,21 +8,29 @@ class RequestHandler(
     private val connection: Socket,
 ) : Thread() {
     override fun run() {
-        val (inputStream, outputStream) = connection
         connection.connected(log)
 
+        val (inputStream, outputStream) = connection
         val br = BufferedReader(InputStreamReader(inputStream))
 
-        log.info("request line : ${readLine()}")
+        val requestLine = br.readLine()
+        log.info("request line : ${requestLine}")
         generateHeader(br).also(log::info)
 
-        DataOutputStream(outputStream).use(::responseOk)
+        val fileUrl = requestLine.split(" ")[1]
+        javaClass.getResource("/web${fileUrl}")?.file
+            .let { File(it) }
+            .run {
+                DataOutputStream(outputStream).use { dos ->
+                    responseOk(dos, this)
+                }
+            }
     }
 
-    private fun responseOk(dos: DataOutputStream) = with(dos) {
-        val body = "Hello World".toByteArray()
-        response200Header(this, body.size)
-        responseBody(this, body)
+    private fun responseOk(dos: DataOutputStream, file: File) = with(dos) {
+        val byteArr = file.readBytes()
+        response200Header(this, byteArr.size)
+        responseBody(this, byteArr)
     }
 
     private fun generateHeader(br: BufferedReader): String {
