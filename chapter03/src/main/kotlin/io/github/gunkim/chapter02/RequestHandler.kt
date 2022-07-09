@@ -6,6 +6,7 @@ import java.util.logging.Logger
 
 class RequestHandler(
     private val connection: Socket,
+    private val resourceFileManager: ResourceFileManager,
 ) : Thread() {
     override fun run() {
         connection.connected(log)
@@ -17,14 +18,12 @@ class RequestHandler(
         log.info("request line : ${requestLine}")
         generateHeader(br).also(log::info)
 
-        val fileUrl = requestLine.split(" ")[1]
-        javaClass.getResource("/web${fileUrl}")?.file
-            .let { File(it) }
-            .run {
-                DataOutputStream(outputStream).use { dos ->
-                    responseOk(dos, this)
-                }
+        val filePath = requestLine.split(" ")[1]
+        resourceFileManager.load("/web${filePath}").run {
+            DataOutputStream(outputStream).use { dos ->
+                responseOk(dos, this)
             }
+        }
     }
 
     private fun responseOk(dos: DataOutputStream, file: File) = with(dos) {
